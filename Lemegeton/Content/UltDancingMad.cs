@@ -20,9 +20,9 @@ namespace Lemegeton.Content
         private const uint StatusArrowDown = 5080;
         private const uint StatusArrowRight = 5081;
         private const uint StatusArrowLeft = 5082;
-        private const uint HeadmarkerForsakenStack = 816;
-        private const uint HeadmarkerForsakenCircle = 817;
-        private const uint HeadmarkerForsakenCone = 818;
+        private const uint HeadmarkerForsakenStack = 822;
+        private const uint HeadmarkerForsakenCircle = 823;
+        private const uint HeadmarkerForsakenCone = 824;
         private const uint AbilityForsaken = 47804;
         private const uint AbilityAllThingsEnding = 47836;
         // idk why theres 2 abilities called all things ending with different ids
@@ -32,7 +32,7 @@ namespace Lemegeton.Content
         private bool ZoneOk = false;
         private bool _subbed = false;
 
-        private ForsakenAM _forsakenAM;
+        private ForsakenAm _forsakenAm;
 
         private enum PhaseEnum
         {
@@ -58,8 +58,8 @@ namespace Lemegeton.Content
             }
         }
 
-        #region ForsakenAM
-        public class ForsakenAM : Automarker
+        #region ForsakenAm
+        public class ForsakenAm : Automarker
         {
 
             [AttributeOrderNumber(1000)]
@@ -86,7 +86,7 @@ namespace Lemegeton.Content
             private uint tower_set = 1;
 
 
-            public ForsakenAM(State state) : base(state)
+            public ForsakenAm(State state) : base(state)
             {
                 Enabled = false;
                 AsSoftmarker = true; // Client-side only marker by default.
@@ -122,7 +122,7 @@ namespace Lemegeton.Content
                 {
                     return;
                 }
-                Log(State.LogLevelEnum.Debug, null, "Registered headMarkerId {0} on {1:X}", headMarkerId, actorId);
+                Log(State.LogLevelEnum.Debug, null, "Admia: Registered headMarkerId {0} on {1:X}", headMarkerId, actorId);
                 if (actorId == 0)
                 {
                     return;
@@ -130,19 +130,22 @@ namespace Lemegeton.Content
                 switch (headMarkerId)
                 {
                     case HeadmarkerForsakenStack:
-                        Log(State.LogLevelEnum.Debug, null, "Forsaken (set {0}): Player {1} Gained Stack", tower_set, actorId);
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken (set {0}): Player {1} Gained Stack", tower_set, actorId);
                         current_roles[actorId] = headMarkerId;
                         break;
                     case HeadmarkerForsakenCircle:
-                        Log(State.LogLevelEnum.Debug, null, "Forsaken (set {0}): Player {1} Gained Circle", tower_set, actorId);
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken (set {0}): Player {1} Gained Circle", tower_set, actorId);
                         current_roles[actorId] = headMarkerId;
                         break;
                     case HeadmarkerForsakenCone:
-                        Log(State.LogLevelEnum.Debug, null, "Forsaken (set {0}): Player {1} Gained Cone", tower_set, actorId);
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken (set {0}): Player {1} Gained Cone", tower_set, actorId);
                         current_roles[actorId] = headMarkerId;
                         break;
+                    default:
+                        return;
                 }
                 n_assigned_roles += 1;
+                Log(State.LogLevelEnum.Debug, null, "Admia: Assigned roles {0}", n_assigned_roles);
                 if (isFirstAssign && n_assigned_roles == 8)
                 {
                     DecideGroupAB();
@@ -175,28 +178,29 @@ namespace Lemegeton.Content
                 {
                     case 1:
                     case 3:
-                        Log(State.LogLevelEnum.Debug, null, "Forsaken set {0} (odd), Group A resolving");
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (odd), Group A resolving");
                         DecideOddTowerMarkers(_groupA);
                         break;
                     case 2:
                     case 8:
-                        Log(State.LogLevelEnum.Debug, null, "Forsaken set {0} (even), Group A resolving");
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (even), Group A resolving");
                         DecideEvenTowerMarkers(_groupA);
                         break;
                     case 5:
                     case 7:
-                        Log(State.LogLevelEnum.Debug, null, "Forsaken set {0} (odd), Group B resolving");
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (odd), Group B resolving");
                         DecideOddTowerMarkers(_groupB);
                         break;
                     case 4:
                     case 6:
-                        Log(State.LogLevelEnum.Debug, null, "Forsaken set {0} (even), Group B resolving");
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (even), Group B resolving");
                         DecideEvenTowerMarkers(_groupB);
                         break;
                 }
             }
             internal void DecideGroupAB()
             {
+                Log(State.LogLevelEnum.Debug, null, "Admia: Adding Players to groups");
                 Party pty = _state.GetPartyMembers();
                 List<Party.PartyMember> sorted_party = pty.Members;
                 Prio.SortByPriority(sorted_party);
@@ -332,6 +336,8 @@ namespace Lemegeton.Content
                 _subbed = true;
                 Log(LogLevelEnum.Debug, null, "Subscribing to events");
                 _state.OnStatusChange += OnStatusChange;
+                _state.OnAction += OnAction;
+                _state.OnHeadMarker += OnHeadMarker;
             }
         }
 
@@ -345,6 +351,8 @@ namespace Lemegeton.Content
                 }
                 Log(LogLevelEnum.Debug, null, "Unsubscribing from events");
                 _state.OnStatusChange -= OnStatusChange;
+                _state.OnAction -= OnAction;
+                _state.OnHeadMarker -= OnHeadMarker;
                 _subbed = false;
             }
         }
@@ -367,7 +375,7 @@ namespace Lemegeton.Content
         {
             if (CurrentPhase == PhaseEnum.Forsaken)
             {
-                _forsakenAM.FeedHeadmarker(dest, markerId);
+                _forsakenAm.FeedHeadmarker(dest, markerId);
             }
         }
 
@@ -380,11 +388,16 @@ namespace Lemegeton.Content
         {
             if (actionId == AbilityForsaken)
             {
+                Log(State.LogLevelEnum.Info, null, "Admia: Forsaken cast captured");
                 CurrentPhase = PhaseEnum.Forsaken;
             }
             if (actionId == AbilityAllThingsEnding || actionId == AbilityAllThingsEnding2)
             {
-                
+                Log(State.LogLevelEnum.Info, null, "Admia: Allthingsending cast captured");
+                if (CurrentPhase == PhaseEnum.Forsaken)
+                {
+                    _forsakenAm.FeedAction(dest, actionId);
+                }
             }
         }
 
@@ -399,8 +412,8 @@ namespace Lemegeton.Content
             bool newZoneOk = (newZone == umadZoneId);
             if (newZoneOk == true && ZoneOk == false)
             {
-                Log(State.LogLevelEnum.Info, null, "Content available");
-                _forsakenAM = (ForsakenAM)Items["ForsakenAm"];
+                Log(State.LogLevelEnum.Info, null, "UMAD Content available");
+                _forsakenAm = (ForsakenAm)Items["ForsakenAm"];
                 SubscribeToEvents();
                 LogItems();
             }

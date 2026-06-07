@@ -14,6 +14,27 @@ namespace Lemegeton.Language
 
         public English(State st) : base(st)
         {
+            #region 1.0.8.1
+            AddEntry("Changelog/1.0.8.1", "Dancing Mad Ultimate Forsaken");
+            AddEntry("Content/Ultimate/UltDancingMad", "Dancing Mad (Ultimate)");
+            AddEntry("Content/Ultimate/UltDancingMad/Enabled", "Enabled");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm", "Phase 2 - Forsaken");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/SelfMarkOnly", "Self-marking only");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/AsSoftmarker", "Show as client-side soft markers");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Enabled", "Enabled");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs1", "Odd Towers");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs1/OddTowerLeftStack", "Left Stack");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs1/OddTowerRightStack", "Right Stack");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs1/OddTowerCircle", "Circle");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs1/OddTowerCone", "Cone");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs2", "Even Towers");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs2/EvenTowerLeftCone", "Left Cone");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs2/EvenTowerLeftCircle", "Left Circle");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs2/EvenTowerRightCone", "Right Cone");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Signs2/EvenTowerRightCircle", "Right Circle");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Prio", "Prio");
+            AddEntry("Content/Ultimate/UltDancingMad/ForsakenAm/Test", "Test");
+            #endregion
             #region 1.0.8.0
             AddEntry("Changelog/1.0.8.0", " Dalamud API 15\n Fixed Pilgrim's Traverse Deep Dungeon");
             #endregion
