@@ -20,9 +20,11 @@ namespace Lemegeton.Content
         private const uint StatusArrowDown = 5080;
         private const uint StatusArrowRight = 5081;
         private const uint StatusArrowLeft = 5082;
-        private const uint HeadmarkerForsakenStack = 822;
-        private const uint HeadmarkerForsakenCircle = 823;
-        private const uint HeadmarkerForsakenCone = 824;
+        // 731 to 733
+        // 822 to 824
+        private const uint HeadmarkerForsakenStack = 731;
+        private const uint HeadmarkerForsakenCircle = 732;
+        private const uint HeadmarkerForsakenCone = 733;
         private const uint AbilityForsaken = 47804;
         private const uint AbilityAllThingsEnding = 47836;
         // idk why theres 2 abilities called all things ending with different ids
@@ -173,28 +175,32 @@ namespace Lemegeton.Content
             }
             internal void ProcessTowerSet()
             {
+                Log(State.LogLevelEnum.Debug, null, "Processing tower set {0}", tower_set);
                 _state.ClearAutoMarkers();
                 switch (tower_set)
                 {
                     case 1:
                     case 3:
-                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (odd), Group A resolving");
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (odd), Group A resolving", tower_set);
                         DecideOddTowerMarkers(_groupA);
                         break;
-                    case 2:
+                    case 2: 
                     case 8:
-                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (even), Group A resolving");
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (even), Group A resolving", tower_set);
                         DecideEvenTowerMarkers(_groupA);
                         break;
                     case 5:
                     case 7:
-                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (odd), Group B resolving");
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (odd), Group B resolving", tower_set);
                         DecideOddTowerMarkers(_groupB);
                         break;
                     case 4:
                     case 6:
-                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (even), Group B resolving");
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken set {0} (even), Group B resolving", tower_set);
                         DecideEvenTowerMarkers(_groupB);
+                        break;
+                    default:
+                        Log(State.LogLevelEnum.Debug, null, "Tower set {0} not recognised", tower_set);
                         break;
                 }
             }
@@ -212,6 +218,7 @@ namespace Lemegeton.Content
 
                 if (current_roles[(uint) support_pair1[0].ObjectId] != current_roles[(uint) support_pair1[1].ObjectId])
                 {
+                    Log(State.LogLevelEnum.Debug, null, "Admia: admia in group A");
                     _groupA.Append((uint) support_pair1[0].ObjectId);
                     _groupA.Append((uint) support_pair1[1].ObjectId);
                     _groupB.Append((uint) support_pair2[0].ObjectId);
@@ -219,6 +226,7 @@ namespace Lemegeton.Content
                 }
                 else
                 {
+                    Log(State.LogLevelEnum.Debug, null, "Admia: admia in group B");
                     _groupB.Append((uint) support_pair1[0].ObjectId);
                     _groupB.Append((uint) support_pair1[1].ObjectId);
                     _groupA.Append((uint) support_pair2[0].ObjectId);
