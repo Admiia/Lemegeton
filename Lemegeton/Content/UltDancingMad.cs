@@ -5,6 +5,7 @@ using System.Linq;
 using static Lemegeton.Core.State;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Network;
+using System.Net.Mail;
 
 namespace Lemegeton.Content
 {
@@ -22,9 +23,8 @@ namespace Lemegeton.Content
         private const uint StatusArrowLeft = 5082;
         // 731 to 733
         // 822 to 824
-        private const uint HeadmarkerForsakenStack = 731;
-        private const uint HeadmarkerForsakenCircle = 732;
-        private const uint HeadmarkerForsakenCone = 733;
+        // 879 to 881
+        
         private const uint AbilityForsaken = 47804;
         private const uint AbilityAllThingsEnding = 47836;
         // idk why theres 2 abilities called all things ending with different ids
@@ -81,11 +81,15 @@ namespace Lemegeton.Content
             public System.Action Test { get; set; }
 
             private bool isFirstAssign = true;
-            private Dictionary<uint, uint> current_roles = new Dictionary<uint, uint>{};
-            private List<uint> _groupA = new List<uint>();
-            private List<uint> _groupB = new List<uint>();
+            private Dictionary<ulong, uint> current_roles = new Dictionary<ulong, uint>{};
+            private List<ulong> _groupA = new List<ulong>();
+            private List<ulong> _groupB = new List<ulong>();
             private uint n_assigned_roles = 0;
             private uint tower_set = 1;
+
+            private uint HeadmarkerForsakenStack = 0;
+            private uint HeadmarkerForsakenCircle = 1;
+            private uint HeadmarkerForsakenCone = 2;
 
 
             public ForsakenAm(State state) : base(state)
@@ -111,11 +115,16 @@ namespace Lemegeton.Content
 
             public override void Reset()
             {
-                Log(State.LogLevelEnum.Debug, null, "Reset");
+                Log(State.LogLevelEnum.Debug, null, "Admia: Reset");
                 n_assigned_roles = 0;
                 isFirstAssign = true;
                 current_roles.Clear();
                 tower_set = 1;
+                _groupA.Clear();
+                _groupB.Clear();
+                HeadmarkerForsakenStack = 0;
+                HeadmarkerForsakenCircle = 1;
+                HeadmarkerForsakenCone = 2;
             }
 
             internal void FeedHeadmarker(uint actorId, uint headMarkerId)
@@ -129,27 +138,15 @@ namespace Lemegeton.Content
                 {
                     return;
                 }
-                switch (headMarkerId)
-                {
-                    case HeadmarkerForsakenStack:
-                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken (set {0}): Player {1} Gained Stack", tower_set, actorId);
-                        current_roles[actorId] = headMarkerId;
-                        break;
-                    case HeadmarkerForsakenCircle:
-                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken (set {0}): Player {1} Gained Circle", tower_set, actorId);
-                        current_roles[actorId] = headMarkerId;
-                        break;
-                    case HeadmarkerForsakenCone:
-                        Log(State.LogLevelEnum.Debug, null, "Admia: Forsaken (set {0}): Player {1} Gained Cone", tower_set, actorId);
-                        current_roles[actorId] = headMarkerId;
-                        break;
-                    default:
-                        return;
-                }
+                current_roles[(ulong) actorId] = headMarkerId;
                 n_assigned_roles += 1;
                 Log(State.LogLevelEnum.Debug, null, "Admia: Assigned roles {0}", n_assigned_roles);
                 if (isFirstAssign && n_assigned_roles == 8)
                 {
+                    // figure out the headmarker id - kefka is mean and changes the base id every instance
+                    HeadmarkerForsakenCircle += current_roles.Values.Min();
+                    HeadmarkerForsakenCone += current_roles.Values.Min();
+                    HeadmarkerForsakenStack += current_roles.Values.Min();
                     DecideGroupAB();
                     ProcessTowerSet();
                     n_assigned_roles = 0;
@@ -216,60 +213,66 @@ namespace Lemegeton.Content
                 List<Party.PartyMember> dps_pair1 = sorted_party.GetRange(4, 2);
                 List<Party.PartyMember> dps_pair2 = sorted_party.GetRange(6, 2);
 
-                if (current_roles[(uint) support_pair1[0].ObjectId] != current_roles[(uint) support_pair1[1].ObjectId])
+                if (current_roles[support_pair1[0].ObjectId] != current_roles[support_pair1[1].ObjectId])
                 {
                     Log(State.LogLevelEnum.Debug, null, "Admia: admia in group A");
-                    _groupA.Append((uint) support_pair1[0].ObjectId);
-                    _groupA.Append((uint) support_pair1[1].ObjectId);
-                    _groupB.Append((uint) support_pair2[0].ObjectId);
-                    _groupB.Append((uint) support_pair2[1].ObjectId);
+                    _groupA.Add(support_pair1[0].ObjectId);
+                    _groupA.Add(support_pair1[1].ObjectId);
+                    _groupB.Add(support_pair2[0].ObjectId);
+                    _groupB.Add(support_pair2[1].ObjectId);
                 }
                 else
                 {
                     Log(State.LogLevelEnum.Debug, null, "Admia: admia in group B");
-                    _groupB.Append((uint) support_pair1[0].ObjectId);
-                    _groupB.Append((uint) support_pair1[1].ObjectId);
-                    _groupA.Append((uint) support_pair2[0].ObjectId);
-                    _groupA.Append((uint) support_pair2[1].ObjectId);
+                    _groupB.Add(support_pair1[0].ObjectId);
+                    _groupB.Add(support_pair1[1].ObjectId);
+                    _groupA.Add(support_pair2[0].ObjectId);
+                    _groupA.Add(support_pair2[1].ObjectId);
                 }
 
-                if (current_roles[(uint) dps_pair1[0].ObjectId] != current_roles[(uint) dps_pair1[1].ObjectId])
+                if (current_roles[dps_pair1[0].ObjectId] != current_roles[dps_pair1[1].ObjectId])
                 {
-                    _groupA.Append((uint) dps_pair1[0].ObjectId);
-                    _groupA.Append((uint) dps_pair1[1].ObjectId);
-                    _groupB.Append((uint) dps_pair2[0].ObjectId);
-                    _groupB.Append((uint) dps_pair2[1].ObjectId);
+                    _groupA.Add(dps_pair1[0].ObjectId);
+                    _groupA.Add(dps_pair1[1].ObjectId);
+                    _groupB.Add(dps_pair2[0].ObjectId);
+                    _groupB.Add(dps_pair2[1].ObjectId);
                 }
                 else
                 {
-                    _groupB.Append((uint) dps_pair1[0].ObjectId);
-                    _groupB.Append((uint) dps_pair1[1].ObjectId);
-                    _groupA.Append((uint) dps_pair2[0].ObjectId);
-                    _groupA.Append((uint) dps_pair2[1].ObjectId);
+                    _groupB.Add(dps_pair1[0].ObjectId);
+                    _groupB.Add(dps_pair1[1].ObjectId);
+                    _groupA.Add(dps_pair2[0].ObjectId);
+                    _groupA.Add(dps_pair2[1].ObjectId);
                 }
 
                 return;
             }
-            internal void DecideOddTowerMarkers(List<uint> resolving_group)
+            internal void DecideOddTowerMarkers(List<ulong> resolving_group)
             {
                 AutomarkerPayload ap = new AutomarkerPayload(_state, SelfMarkOnly, AsSoftmarker);
 
                 Party pty = _state.GetPartyMembers();
-                List<Party.PartyMember> resolving_party = pty.GetByActorIds(resolving_group);
+                List<Party.PartyMember> resolving_party = (from ix in pty.Members join jx in resolving_group on ix.ObjectId equals jx select ix).ToList();
                 Prio.SortByPriority(resolving_party);
                 bool left_stack_assigned = false;
+                Log(State.LogLevelEnum.Debug, null, "Admia: resolving len {0}", resolving_group.Count);
                 foreach (Party.PartyMember mbr in resolving_party)
                 {
-                    switch ((uint)mbr.ObjectId)
+                    Log(State.LogLevelEnum.Debug, null, "Admia: Assigning marker marker");
+                    uint user_current_role = current_roles[mbr.ObjectId];
+                    Log(State.LogLevelEnum.Debug, null, "Admia: User has current role {0}", user_current_role);
+
+                    if (user_current_role == HeadmarkerForsakenCircle)
                     {
-                        case HeadmarkerForsakenCircle:
-                            ap.Assign(Signs1.Roles["OddTowerCircle"], mbr.GameObject);
-                            break;
-                        case HeadmarkerForsakenCone:
-                            ap.Assign(Signs1.Roles["OddTowerCone"], mbr.GameObject);
-                            break;
-                        case HeadmarkerForsakenStack:
-                            if (left_stack_assigned)
+                        ap.Assign(Signs1.Roles["OddTowerCircle"], mbr.GameObject);
+                    }
+                    else if (user_current_role == HeadmarkerForsakenCone)
+                    {
+                        ap.Assign(Signs1.Roles["OddTowerCone"], mbr.GameObject);
+                    }
+                    else if (user_current_role == HeadmarkerForsakenStack)
+                    {
+                        if (left_stack_assigned)
                             {
                                 ap.Assign(Signs1.Roles["OddTowerLeftStack"], mbr.GameObject);
                                 left_stack_assigned = true;
@@ -278,17 +281,17 @@ namespace Lemegeton.Content
                             {
                                 ap.Assign(Signs1.Roles["OddTowerRightStack"], mbr.GameObject);
                             }
-                            break;
                     }
+
                 }
                 _state.ExecuteAutomarkers(ap, Timing);
             }
-            internal void DecideEvenTowerMarkers(List<uint> resolving_group)
+            internal void DecideEvenTowerMarkers(List<ulong> resolving_group)
             {
                 AutomarkerPayload ap = new AutomarkerPayload(_state, SelfMarkOnly, AsSoftmarker);
 
                 Party pty = _state.GetPartyMembers();
-                List<Party.PartyMember> resolving_party = pty.GetByActorIds(resolving_group);
+                List<Party.PartyMember> resolving_party = (from ix in pty.Members join jx in resolving_group on ix.ObjectId equals jx select ix).ToList();
                 Prio.SortByPriority(resolving_party);
 
                 bool left_cone_assigned = false;
@@ -296,35 +299,38 @@ namespace Lemegeton.Content
 
                 foreach (Party.PartyMember mbr in resolving_party)
                 {
-                    switch ((uint)mbr.ObjectId)
-                    {
-                        case HeadmarkerForsakenCircle:
-                            if (left_circle_assigned)
-                            {
-                                ap.Assign(Signs2.Roles["EvenTowerLeftCircle"], mbr.GameObject);
-                                left_cone_assigned = true;
-                            }
-                            else
-                            {
-                                ap.Assign(Signs2.Roles["EvenTowerRightCircle"], mbr.GameObject);
-                            }
-                            break;
-                        case HeadmarkerForsakenCone:
-                            if (left_cone_assigned)
-                            {
-                                ap.Assign(Signs2.Roles["EvenTowerLeftCone"], mbr.GameObject);
-                                left_cone_assigned = true;
-                            }
-                            else
-                            {
-                                ap.Assign(Signs2.Roles["EvenTowerRightCone"], mbr.GameObject);
-                            }
-                            break;
-                    }
-                }
-                _state.ExecuteAutomarkers(ap, Timing);
-            }
+                    Log(State.LogLevelEnum.Debug, null, "Admia: Assigning marker marker");
+                    uint user_current_role = current_roles[mbr.ObjectId];
+                    Log(State.LogLevelEnum.Debug, null, "Admia: User has current role {0}", user_current_role);
 
+                    if (user_current_role == HeadmarkerForsakenCircle)
+                    {
+                        if (left_circle_assigned)
+                        {
+                            ap.Assign(Signs2.Roles["EvenTowerLeftCircle"], mbr.GameObject);
+                            left_cone_assigned = true;
+                        }
+                        else
+                        {
+                            ap.Assign(Signs2.Roles["EvenTowerRightCircle"], mbr.GameObject);
+                        }
+                    }
+                    else if (user_current_role == HeadmarkerForsakenCone)
+                    {
+                        if (left_cone_assigned)
+                        {
+                            ap.Assign(Signs2.Roles["EvenTowerLeftCone"], mbr.GameObject);
+                            left_cone_assigned = true;
+                        }
+                        else
+                        {
+                            ap.Assign(Signs2.Roles["EvenTowerRightCone"], mbr.GameObject);
+                        }
+                    }
+                    _state.ExecuteAutomarkers(ap, Timing);
+                }
+
+            }
         }
         #endregion
 
