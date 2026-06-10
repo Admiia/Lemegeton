@@ -125,6 +125,7 @@ namespace Lemegeton.Content
                 HeadmarkerForsakenStack = 0;
                 HeadmarkerForsakenCircle = 1;
                 HeadmarkerForsakenCone = 2;
+                _state.ClearAutoMarkers();
             }
 
             internal void FeedHeadmarker(uint actorId, uint headMarkerId)
@@ -255,7 +256,6 @@ namespace Lemegeton.Content
                 List<Party.PartyMember> resolving_party = (from ix in pty.Members join jx in resolving_group on ix.ObjectId equals jx select ix).ToList();
                 Prio.SortByPriority(resolving_party);
                 bool left_stack_assigned = false;
-                Log(State.LogLevelEnum.Debug, null, "Admia: resolving len {0}", resolving_group.Count);
                 foreach (Party.PartyMember mbr in resolving_party)
                 {
                     Log(State.LogLevelEnum.Debug, null, "Admia: Assigning marker marker");
@@ -265,21 +265,25 @@ namespace Lemegeton.Content
                     if (user_current_role == HeadmarkerForsakenCircle)
                     {
                         ap.Assign(Signs1.Roles["OddTowerCircle"], mbr.GameObject);
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Given user circle");
                     }
                     else if (user_current_role == HeadmarkerForsakenCone)
                     {
                         ap.Assign(Signs1.Roles["OddTowerCone"], mbr.GameObject);
+                        Log(State.LogLevelEnum.Debug, null, "Admia: Given user triangle");
                     }
                     else if (user_current_role == HeadmarkerForsakenStack)
                     {
-                        if (left_stack_assigned)
+                        if (!left_stack_assigned)
                             {
                                 ap.Assign(Signs1.Roles["OddTowerLeftStack"], mbr.GameObject);
                                 left_stack_assigned = true;
+                                Log(State.LogLevelEnum.Debug, null, "Admia: Given user left stack");
                             }
                             else
                             {
                                 ap.Assign(Signs1.Roles["OddTowerRightStack"], mbr.GameObject);
+                                Log(State.LogLevelEnum.Debug, null, "Admia: Given user right stack");
                             }
                     }
 
@@ -305,26 +309,30 @@ namespace Lemegeton.Content
 
                     if (user_current_role == HeadmarkerForsakenCircle)
                     {
-                        if (left_circle_assigned)
+                        if (!left_circle_assigned)
                         {
                             ap.Assign(Signs2.Roles["EvenTowerLeftCircle"], mbr.GameObject);
-                            left_cone_assigned = true;
+                            left_circle_assigned = true;
+                            Log(State.LogLevelEnum.Debug, null, "Admia: Given user left circle");
                         }
                         else
                         {
                             ap.Assign(Signs2.Roles["EvenTowerRightCircle"], mbr.GameObject);
+                            Log(State.LogLevelEnum.Debug, null, "Admia: Given user right circle");
                         }
                     }
                     else if (user_current_role == HeadmarkerForsakenCone)
                     {
-                        if (left_cone_assigned)
+                        if (!left_cone_assigned)
                         {
                             ap.Assign(Signs2.Roles["EvenTowerLeftCone"], mbr.GameObject);
                             left_cone_assigned = true;
+                            Log(State.LogLevelEnum.Debug, null, "Admia: Given user left cone");
                         }
                         else
                         {
                             ap.Assign(Signs2.Roles["EvenTowerRightCone"], mbr.GameObject);
+                            Log(State.LogLevelEnum.Debug, null, "Admia: Given user right cone");
                         }
                     }
                     _state.ExecuteAutomarkers(ap, Timing);
@@ -352,6 +360,7 @@ namespace Lemegeton.Content
                 _state.OnStatusChange += OnStatusChange;
                 _state.OnAction += OnAction;
                 _state.OnHeadMarker += OnHeadMarker;
+                _state.OnCombatChange += OnCombatChange;
             }
         }
 
@@ -367,6 +376,7 @@ namespace Lemegeton.Content
                 _state.OnStatusChange -= OnStatusChange;
                 _state.OnAction -= OnAction;
                 _state.OnHeadMarker -= OnHeadMarker;
+                _state.OnCombatChange -= OnCombatChange;
                 _subbed = false;
             }
         }
@@ -418,7 +428,9 @@ namespace Lemegeton.Content
         private void OnCombatChange(bool inCombat)
         {
             Reset();
+            _forsakenAm.Reset();
             CurrentPhase = PhaseEnum.Start;
+            _state.ClearAutoMarkers();
         }
 
         private void OnZoneChange(uint newZone)
